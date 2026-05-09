@@ -1,4 +1,4 @@
-#include "../../headers/core/process_result.h"
+#include "core/process_result.h"
 
 #include <sys/wait.h>
 
@@ -10,11 +10,6 @@ void process_result_init(ProcessResult *result, int raw_status) {
 // Indique si le processus enfant s'est terminé normalement.
 int process_result_exited(const ProcessResult *result) {
     return WIFEXITED(result->raw_status);
-}
-
-// Retourne le code de sortie du processus enfant.
-int process_result_exit_status(const ProcessResult *result) {
-    return WEXITSTATUS(result->raw_status);
 }
 
 // Récupère le code de sortie uniquement s'il est disponible.
@@ -30,11 +25,6 @@ int process_result_get_exit_status(const ProcessResult *result, int *exit_status
 // Indique si le processus enfant a été terminé par un signal.
 int process_result_signaled(const ProcessResult *result) {
     return WIFSIGNALED(result->raw_status);
-}
-
-// Retourne le signal qui a terminé le processus enfant.
-int process_result_signal(const ProcessResult *result) {
-    return WTERMSIG(result->raw_status);
 }
 
 // Récupère le signal uniquement s'il est disponible.

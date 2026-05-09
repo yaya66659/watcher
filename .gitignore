@@ -3,4 +3,5 @@
 a.out
 watcher
 build/
+bin/watcher
 .vscode/

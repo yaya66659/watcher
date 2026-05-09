@@ -1,4 +1,5 @@
 CC := gcc
+CPPFLAGS := -Iheaders
 CFLAGS := -Wall -Wextra -Werror -std=c11
 TARGET := bin/watcher
 BUILD_DIR := build
@@ -11,7 +12,7 @@ SRCS := src/main.c \
 OBJS := $(SRCS:%.c=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
-.PHONY: all clean
+.PHONY: all clean test test-fr retest
 
 all: $(TARGET)
 
@@ -21,9 +22,17 @@ $(TARGET): $(OBJS)
 
 $(BUILD_DIR)/%.o: %.c
 	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
+
+test: all
+	sh ./tests/test_cli.sh
+
+test-fr: all
+	sh ./tests/test_cli_fr.sh
+
+retest: clean test
 
 -include $(DEPS)
