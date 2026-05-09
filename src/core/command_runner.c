@@ -24,6 +24,11 @@ void command_runner_init(CommandRunner *runner, char *path, char **args, char **
 
 // Exécute la commande dans le processus enfant.
 static void command_runner_exec_child(CommandRunner *runner) {
+    if (setpgid(0, 0) < 0) {
+        perror("setpgid");
+        _exit(127);
+    }
+
     execve(runner->path, runner->args, runner->env);
     perror("execve");
     _exit(127);
@@ -61,7 +66,13 @@ static CommandRunnerStatus command_runner_wait_child_with_timeout(
             return COMMAND_RUNNER_SUCCESS;
         }
 
-        if (wait_result < 0 && errno != EINTR) {
+        if (wait_result < 0 && errno == EINTR) {
+            sleep(1);
+            elapsed_seconds++;
+            continue;
+        }
+
+        if (wait_result < 0) {
             return COMMAND_RUNNER_WAIT_ERROR;
         }
 
@@ -71,7 +82,7 @@ static CommandRunnerStatus command_runner_wait_child_with_timeout(
         }
     }
 
-    if (kill(pid, SIGTERM) < 0 && errno != ESRCH) {
+    if (kill(-pid, SIGTERM) < 0 && errno != ESRCH) {
         return COMMAND_RUNNER_WAIT_ERROR;
     }
 
@@ -83,7 +94,13 @@ static CommandRunnerStatus command_runner_wait_child_with_timeout(
             return COMMAND_RUNNER_SUCCESS;
         }
 
-        if (wait_result < 0 && errno != EINTR) {
+        if (wait_result < 0 && errno == EINTR) {
+            sleep(1);
+            grace_seconds++;
+            continue;
+        }
+
+        if (wait_result < 0) {
             return COMMAND_RUNNER_WAIT_ERROR;
         }
 
@@ -93,7 +110,7 @@ static CommandRunnerStatus command_runner_wait_child_with_timeout(
         }
     }
 
-    if (kill(pid, SIGKILL) < 0 && errno != ESRCH) {
+    if (kill(-pid, SIGKILL) < 0 && errno != ESRCH) {
         return COMMAND_RUNNER_WAIT_ERROR;
     }
 
@@ -117,6 +134,10 @@ CommandRunnerStatus command_runner_run(CommandRunner *runner, ProcessResult *res
     }
 
     if (runner->timeout_seconds > 0) {
+        if (setpgid(pid, pid) < 0 && errno != EACCES) {
+            return COMMAND_RUNNER_WAIT_ERROR;
+        }
+
         return command_runner_wait_child_with_timeout(pid, result, runner->timeout_seconds);
     }
 
